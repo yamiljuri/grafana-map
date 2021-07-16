@@ -69,7 +69,7 @@ System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/plugins
             maxDataPoints: 500,
             autoZoom: true,
             scrollWheelZoom: false,
-            defaultLayer: 'OpenStreetMap',
+            defaultLayer: 'Satellite',
             showLayerChanger: true,
             lineColor: 'red',
             pointColor: 'royalblue'
