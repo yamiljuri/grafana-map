@@ -1,7 +1,7 @@
-System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/plugins/sdk", "./leaflet/leaflet.css!", "./partials/module.css!"], function (_export, _context) {
+System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/plugins/sdk", "./leaflet/leaflet.css!", "./partials/module.css!"], function (_export, _context) {
   "use strict";
 
-  var L, moment, appEvents, MetricsPanelCtrl, TrackMapCtrl;
+  var L, moment, LegacyGraphHoverClearEvent, LegacyGraphHoverEvent, MetricsPanelCtrl, TrackMapCtrl;
 
   function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -23,9 +23,25 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
   function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-  function log(msg) {
-    // uncomment for debugging
-    console.log(msg);
+  function log(msg) {// uncomment for debugging
+    //console.log(msg);
+  }
+
+  function getAntimeridianMidpoints(start, end) {
+    // See https://stackoverflow.com/a/65870755/369977
+    if (Math.abs(start.lng - end.lng) <= 180.0) {
+      return null;
+    }
+
+    var start_dist_to_antimeridian = start.lng > 0 ? 180 - start.lng : 180 + start.lng;
+    var end_dist_to_antimeridian = end.lng > 0 ? 180 - end.lng : 180 + end.lng;
+    var lat_difference = Math.abs(start.lat - end.lat);
+    var alpha_angle = Math.atan(lat_difference / (start_dist_to_antimeridian + end_dist_to_antimeridian)) * (180 / Math.PI) * (start.lng > 0 ? 1 : -1);
+    var lat_diff_at_antimeridian = Math.tan(alpha_angle * Math.PI / 180) * start_dist_to_antimeridian;
+    var intersection_lat = start.lat + lat_diff_at_antimeridian;
+    var first_line_end = [intersection_lat, start.lng > 0 ? 180 : -180];
+    var second_line_start = [intersection_lat, end.lng > 0 ? 180 : -180];
+    return [L.latLng(first_line_end), L.latLng(second_line_start)];
   }
 
   return {
@@ -33,8 +49,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
       L = _leafletLeafletJs.default;
     }, function (_moment) {
       moment = _moment.default;
-    }, function (_appCoreApp_events) {
-      appEvents = _appCoreApp_events.default;
+    }, function (_grafanaData) {
+      LegacyGraphHoverClearEvent = _grafanaData.LegacyGraphHoverClearEvent;
+      LegacyGraphHoverEvent = _grafanaData.LegacyGraphHoverEvent;
     }, function (_appPluginsSdk) {
       MetricsPanelCtrl = _appPluginsSdk.MetricsPanelCtrl;
     }, function (_leafletLeafletCss) {}, function (_partialsModuleCss) {}],
@@ -56,11 +73,10 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             maxDataPoints: 500,
             autoZoom: true,
             scrollWheelZoom: false,
-            defaultLayer: 'Satellite',
+            defaultLayer: 'OpenStreetMap',
             showLayerChanger: true,
             lineColor: 'red',
-            pointColor: 'royalblue',
-            maxDataPointDelta: 60
+            pointColor: 'royalblue'
           }); // Save layers globally in order to use them in options
 
 
@@ -85,6 +101,7 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
           };
           _this.timeSrv = $injector.get('timeSrv');
           _this.coords = [];
+          _this.coordSlices = [];
           _this.leafMap = null;
           _this.layerChanger = null;
           _this.polylines = [];
@@ -94,32 +111,41 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
           _this.events.on('panel-initialized', _this.onInitialized.bind(_assertThisInitialized(_this)));
 
-          _this.events.on('view-mode-changed', _this.onViewModeChanged.bind(_assertThisInitialized(_this)));
-
           _this.events.on('init-edit-mode', _this.onInitEditMode.bind(_assertThisInitialized(_this)));
 
           _this.events.on('panel-teardown', _this.onPanelTeardown.bind(_assertThisInitialized(_this)));
-
-          _this.events.on('panel-size-changed', _this.onPanelSizeChanged.bind(_assertThisInitialized(_this)));
 
           _this.events.on('data-received', _this.onDataReceived.bind(_assertThisInitialized(_this)));
 
           _this.events.on('data-snapshot-load', _this.onDataSnapshotLoad.bind(_assertThisInitialized(_this)));
 
-          _this.events.on('render', _this.onRender.bind(_assertThisInitialized(_this))); // Global events
+          _this.events.on('render', _this.onRender.bind(_assertThisInitialized(_this)));
+
+          _this.events.on('refresh', _this.onRefresh.bind(_assertThisInitialized(_this))); // Global events
 
 
-          appEvents.on('graph-hover', _this.onPanelHover.bind(_assertThisInitialized(_this)));
-          appEvents.on('graph-hover-clear', _this.onPanelClear.bind(_assertThisInitialized(_this)));
+          _this.dashboard.events.on(LegacyGraphHoverEvent.type, _this.onPanelHover.bind(_assertThisInitialized(_this)), $scope);
+
+          _this.dashboard.events.on(LegacyGraphHoverClearEvent.type, _this.onPanelClear.bind(_assertThisInitialized(_this)), $scope);
+
           return _this;
         }
 
         _createClass(TrackMapCtrl, [{
+          key: "onRefresh",
+          value: function onRefresh() {
+            log("onRefresh");
+            this.onPanelSizeChanged();
+          }
+        }, {
           key: "onRender",
           value: function onRender() {
             var _this2 = this;
 
-            log("onRender"); // Wait until there is at least one GridLayer with fully loaded
+            log("onRender"); // No specific event for panel size changing anymore
+            // Render is called when the size changes so just call it here
+
+            this.onPanelSizeChanged(); // Wait until there is at least one GridLayer with fully loaded
             // tiles before calling renderingCompleted
 
             if (this.leafMap) {
@@ -215,15 +241,6 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             }
           }
         }, {
-          key: "onViewModeChanged",
-          value: function onViewModeChanged() {
-            log("onViewModeChanged"); // KLUDGE: When the view mode is changed, panel resize events are not
-            //         emitted even if the panel was resized. Work around this by telling
-            //         the panel it's been resized whenever the view mode changes.
-
-            this.onPanelSizeChanged();
-          }
-        }, {
           key: "onPanelSizeChanged",
           value: function onPanelSizeChanged() {
             log("onPanelSizeChanged"); // KLUDGE: This event is fired too soon - we need to delay doing the actual
@@ -283,13 +300,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             log("setupMap"); // Create the map or get it back in a clean state if it already exists
 
             if (this.leafMap) {
-              if (this.polylines.length > 0) {
-                this.polylines.forEach(function (polyline) {
-                  return polyline.removeFrom(_this4.leafMap);
-                });
-                this.polylines = [];
-              }
-
+              this.polylines.forEach(function (p) {
+                return p.removeFrom(_this4.leafMap);
+              });
               this.onPanelClear();
               return;
             } // Create the map
@@ -366,36 +379,24 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             }
 
             this.render();
-          } // Add the circles and polyline to the map
+          } // Add the circles and polyline(s) to the map
 
         }, {
           key: "addDataToMap",
           value: function addDataToMap() {
-            var _this5 = this;
-
-            var coords = [[]];
-            this.coords.forEach(function (coord, index) {
-              if (index !== 0 && _this5.panel.maxDataPointDelta !== 0) {
-                var prevTimestamp = _this5.coords[index - 1].timestamp;
-                log("-------------");
-                log(_this5.panel.maxDataPointDelta * 1000);
-                log(coord.timestamp - prevTimestamp);
-                log("-------------");
-
-                if (coord.timestamp - prevTimestamp > _this5.panel.maxDataPointDelta * 1000) {
-                  coords.push([]); // Start a new polyline
-                }
-              }
-
-              coords[coords.length - 1].push(coord.position);
-            });
             log("addDataToMap");
-            coords.forEach(function (polyline) {
-              _this5.polylines.push(L.polyline(polyline, {
-                color: _this5.panel.lineColor,
+            this.polylines.length = 0;
+
+            for (var i = 0; i < this.coordSlices.length - 1; i++) {
+              var coordSlice = this.coords.slice(this.coordSlices[i], this.coordSlices[i + 1]);
+              this.polylines.push(L.polyline(coordSlice.map(function (x) {
+                return x.position;
+              }, this), {
+                color: this.panel.lineColor,
                 weight: 3
-              }).addTo(_this5.leafMap));
-            });
+              }).addTo(this.leafMap));
+            }
+
             this.zoomToFit();
           }
         }, {
@@ -405,10 +406,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
             if (this.panel.autoZoom && this.polylines.length > 0) {
               var bounds = this.polylines[0].getBounds();
-
-              for (var i = 1; i < this.polylines.length; i++) {
-                bounds = bounds.extend(this.polylines[i].getBounds());
-              }
+              this.polylines.forEach(function (p) {
+                return bounds.extend(p.getBounds());
+              });
 
               if (bounds.isValid()) {
                 this.leafMap.fitBounds(bounds);
@@ -420,20 +420,14 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             this.render();
           }
         }, {
-          key: "refreshPolylines",
-          value: function refreshPolylines() {
-            this.setupMap();
-            this.addDataToMap();
-          }
-        }, {
           key: "refreshColors",
           value: function refreshColors() {
-            var _this6 = this;
+            var _this5 = this;
 
             log("refreshColors");
-            this.polylines.forEach(function (polyline) {
-              polyline.setStyle({
-                color: _this6.panel.lineColor
+            this.polylines.forEach(function (p) {
+              p.setStyle({
+                color: _this5.panel.lineColor
               });
             });
 
@@ -448,6 +442,8 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
         }, {
           key: "onDataReceived",
           value: function onDataReceived(data) {
+            var _this6 = this;
+
             log("onDataReceived");
             this.setupMap();
 
@@ -461,20 +457,51 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
 
             this.coords.length = 0;
+            this.coordSlices.length = 0;
+            this.coordSlices.push(0);
             var lats = data[0].datapoints;
             var lons = data[1].datapoints;
 
-            for (var i = 0; i < lats.length; i++) {
-              if (lats[i][0] == null || lons[i][0] == null || lats[i][1] !== lons[i][1]) {
-                continue;
+            var _loop = function _loop(i) {
+              if (lats[i][0] == null || lons[i][0] == null || lats[i][0] == 0 && lons[i][0] == 0 || lats[i][1] !== lons[i][1]) {
+                return "continue";
               }
 
-              this.coords.push({
-                position: L.latLng(lats[i][0], lons[i][0]),
+              var pos = L.latLng(lats[i][0], lons[i][0]);
+
+              if (_this6.coords.length > 0) {
+                // Deal with the line between last point and this one crossing the antimeridian:
+                // Draw a line from the last point to the antimeridian and another from the anitimeridian
+                // to the current point.
+                var midpoints = getAntimeridianMidpoints(_this6.coords[_this6.coords.length - 1].position, pos);
+
+                if (midpoints != null) {
+                  // Crossed the antimeridian, add the points to the coords array
+                  var lastTime = _this6.coords[_this6.coords.length - 1].timestamp;
+                  midpoints.forEach(function (p) {
+                    _this6.coords.push({
+                      position: p,
+                      timestamp: lastTime + (lats[i][1] - lastTime) / 2
+                    });
+                  }); // Note that we need to start drawing a new line between the added points
+
+                  _this6.coordSlices.push(_this6.coords.length - 1);
+                }
+              }
+
+              _this6.coords.push({
+                position: pos,
                 timestamp: lats[i][1]
               });
+            };
+
+            for (var i = 0; i < lats.length; i++) {
+              var _ret = _loop(i);
+
+              if (_ret === "continue") continue;
             }
 
+            this.coordSlices.push(this.coords.length);
             this.addDataToMap();
           }
         }, {
