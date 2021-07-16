@@ -55,7 +55,7 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             showLayerChanger: true,
             lineColor: 'red',
             pointColor: 'royalblue',
-            maxDataPointDelta: 0
+            maxDataPointDelta: 60
           }); // Save layers globally in order to use them in options
 
 
