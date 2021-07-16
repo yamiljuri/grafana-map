@@ -372,6 +372,10 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             this.coords.forEach(function (coord, index) {
               if (index !== 0 && _this5.panel.maxDataPointDelta !== 0) {
                 var prevTimestamp = _this5.coords[index - 1].timestamp;
+                console.log("-------------");
+                console.log(_this5.panel.maxDataPointDelta * 1000);
+                console.log(coord.timestamp - prevTimestamp);
+                console.log("-------------");
 
                 if (coord.timestamp - prevTimestamp > _this5.panel.maxDataPointDelta * 1000) {
                   coords.push([]); // Start a new polyline
