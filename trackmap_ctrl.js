@@ -23,8 +23,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
   function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-  function log(msg) {// uncomment for debugging
-    //console.log(msg);
+  function log(msg) {
+    // uncomment for debugging
+    console.log(msg);
   }
 
   return {
@@ -376,10 +377,10 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
             this.coords.forEach(function (coord, index) {
               if (index !== 0 && _this5.panel.maxDataPointDelta !== 0) {
                 var prevTimestamp = _this5.coords[index - 1].timestamp;
-                console.log("-------------");
-                console.log(_this5.panel.maxDataPointDelta * 1000);
-                console.log(coord.timestamp - prevTimestamp);
-                console.log("-------------");
+                log("-------------");
+                log(_this5.panel.maxDataPointDelta * 1000);
+                log(coord.timestamp - prevTimestamp);
+                log("-------------");
 
                 if (coord.timestamp - prevTimestamp > _this5.panel.maxDataPointDelta * 1000) {
                   coords.push([]); // Start a new polyline
