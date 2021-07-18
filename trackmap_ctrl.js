@@ -1,7 +1,7 @@
-System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/plugins/sdk", "./leaflet/leaflet.css!", "./partials/module.css!"], function (_export, _context) {
+System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/core/app_events", "app/plugins/sdk", "./leaflet/leaflet.css!", "./partials/module.css!"], function (_export, _context) {
   "use strict";
 
-  var L, moment, appEvents, MetricsPanelCtrl, TrackMapCtrl;
+  var L, moment, LegacyGraphHoverClearEvent, LegacyGraphHoverEvent, appEvents, MetricsPanelCtrl, TrackMapCtrl;
 
   function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -31,6 +31,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
       L = _leafletLeafletJs.default;
     }, function (_moment) {
       moment = _moment.default;
+    }, function (_grafanaData) {
+      LegacyGraphHoverClearEvent = _grafanaData.LegacyGraphHoverClearEvent;
+      LegacyGraphHoverEvent = _grafanaData.LegacyGraphHoverEvent;
     }, function (_appCoreApp_events) {
       appEvents = _appCoreApp_events.default;
     }, function (_appPluginsSdk) {
