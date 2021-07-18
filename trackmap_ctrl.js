@@ -21,8 +21,9 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
   function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
-  function log(msg) {// uncomment for debugging
-    //console.log(msg);
+  function log(msg) {
+    // uncomment for debugging
+    console.log(msg);
   }
 
   return {
@@ -151,6 +152,7 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
           key: "onPanelHover",
           value: function onPanelHover(evt) {
             log("onPanelHover");
+            log(this.coords);
 
             if (this.coords.length === 0) {
               return;
