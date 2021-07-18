@@ -21,9 +21,8 @@ System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/core/ap
 
   function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
-  function log(msg) {
-    // uncomment for debugging
-    console.log(msg);
+  function log(msg) {// uncomment for debugging
+    //console.log(msg);
   }
 
   return {
@@ -106,10 +105,10 @@ System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/core/ap
           _this.events.on('data-snapshot-load', _this.onDataSnapshotLoad.bind(_assertThisInitialized(_this)));
 
           _this.events.on('render', _this.onRender.bind(_assertThisInitialized(_this))); // Global events
+          //appEvents.on('graph-hover', this.onPanelHover.bind(this));
+          //appEvents.on('graph-hover-clear', this.onPanelClear.bind(this));
+          // Global events
 
-
-          appEvents.on('graph-hover', _this.onPanelHover.bind(_assertThisInitialized(_this)));
-          appEvents.on('graph-hover-clear', _this.onPanelClear.bind(_assertThisInitialized(_this))); // Global events
 
           _this.dashboard.events.on(LegacyGraphHoverEvent.type, _this.onPanelHover.bind(_assertThisInitialized(_this)), $scope);
 
