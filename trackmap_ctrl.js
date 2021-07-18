@@ -106,7 +106,12 @@ System.register(["./leaflet/leaflet.js", "moment", "app/core/app_events", "app/p
 
 
           appEvents.on('graph-hover', _this.onPanelHover.bind(_assertThisInitialized(_this)));
-          appEvents.on('graph-hover-clear', _this.onPanelClear.bind(_assertThisInitialized(_this)));
+          appEvents.on('graph-hover-clear', _this.onPanelClear.bind(_assertThisInitialized(_this))); // Global events
+
+          _this.dashboard.events.on(LegacyGraphHoverEvent.type, _this.onPanelHover.bind(_assertThisInitialized(_this)), $scope);
+
+          _this.dashboard.events.on(LegacyGraphHoverClearEvent.type, _this.onPanelClear.bind(_assertThisInitialized(_this)), $scope);
+
           return _this;
         }
 
