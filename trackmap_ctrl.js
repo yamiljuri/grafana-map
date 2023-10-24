@@ -85,6 +85,11 @@ System.register(["./leaflet/leaflet.js", "moment", "@grafana/data", "app/core/ap
               attribution: '&copy; Kort & Matrikelstyrelsen',
               tms: true,
               maxZoom: 17,
+            }),
+            'Tecsat': L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains:['mt0','mt1','mt2','mt3'],
+                attribution: 'Imagery &copy; <a href="https://www.google.com/maps">Google Maps</a>'
             })
           };
           _this.timeSrv = $injector.get('timeSrv');
